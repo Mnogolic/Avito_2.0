@@ -1,31 +1,36 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext.jsx';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthContext';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import CartPage from './CartPage';
 import ProductList from './ProductList';
+import CartPage from './CartPage';
 
-function ProtectedRoute({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-}
+const ProtectedRoute = ({ children }) => {
+  const { user, authChecked } = useAuth();
+  if (!authChecked) return null; // Можно показывать лоадер
+  return user ? children : <Navigate to="/login" replace />;
+};
 
-function App() {
+export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
-          <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <ProductList />
+            </ProtectedRoute>
+          } />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/cart" element={
+            <ProtectedRoute>
+              <CartPage />
+            </ProtectedRoute>
+          } />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
-
-export default App;

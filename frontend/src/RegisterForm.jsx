@@ -3,105 +3,53 @@ import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function RegisterForm() {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      setError('Пароли не совпадают');
-      return;
-    }
-
+    setError('');
     try {
       await register(formData.username, formData.email, formData.password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Ошибка регистрации');
+      setError(err.message);
     }
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-4">
-          <div className="card shadow">
-            <div className="card-body p-4">
-              <h2 className="text-center mb-4">Регистрация</h2>
-              {error && <div className="alert alert-danger">{error}</div>}
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label">Логин</label>
-                  <input
-                    type="text"
-                    name="username"
-                    className="form-control"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <div className="mb-3">
-                  <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="form-control"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <div className="mb-3">
-                  <label className="form-label">Пароль</label>
-                  <input
-                    type="password"
-                    name="password"
-                    className="form-control"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    minLength="6"
-                  />
-                </div>
-                
-                <div className="mb-3">
-                  <label className="form-label">Подтвердите пароль</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    className="form-control"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <button type="submit" className="btn btn-primary w-100 mb-3">
-                  Зарегистрироваться
-                </button>
-                
-                <div className="text-center">
-                  Уже есть аккаунт? <Link to="/login" className="text-primary">Войти</Link>
-                </div>
-              </form>
-            </div>
+    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+      <div className="card p-4 shadow-sm" style={{ maxWidth: 400, width: "100%" }}>
+        <div className="text-center mb-3">
+          <i className="bi bi-person-plus-fill fs-1 text-success mb-2" />
+          <h2 className="fw-bold mb-0">Регистрация</h2>
+          <div className="text-muted mb-3">Создайте новый аккаунт</div>
+        </div>
+        {error && <div className="alert alert-danger py-2">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label className="form-label">Логин</label>
+            <input name="username" value={formData.username} onChange={handleChange} className="form-control" placeholder="Придумайте логин" required autoFocus />
           </div>
+          <div className="mb-3">
+            <label className="form-label">E-mail</label>
+            <input type="email" name="email" value={formData.email} onChange={handleChange} className="form-control" placeholder="Ваш e-mail" required />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Пароль</label>
+            <input type="password" name="password" value={formData.password} onChange={handleChange} className="form-control" placeholder="Придумайте пароль" required />
+          </div>
+          <button type="submit" className="btn btn-success w-100" disabled={isLoading}>
+            {isLoading ? 'Регистрируем...' : 'Зарегистрироваться'}
+          </button>
+        </form>
+        <div className="text-center mt-3">
+          <span className="text-muted">Уже есть аккаунт? </span>
+          <Link to="/login">Войти</Link>
         </div>
       </div>
     </div>

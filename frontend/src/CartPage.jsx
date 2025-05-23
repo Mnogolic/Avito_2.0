@@ -1,41 +1,33 @@
+import React from 'react';
 import { useAuth } from './AuthContext';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function CartPage() {
-  const { user, removeFromCart } = useAuth();
+  const { user, removeFromCart, isLoading } = useAuth();
+  const navigate = useNavigate();
 
-  if (!user) return <div className="container mt-5">Авторизуйтесь для просмотра корзины</div>;
-
-  const handleRemove = (productId) => {
-    removeFromCart(productId);
-  };
+  if (!user) return null;
 
   return (
-    <div className="container mt-4">
-      <h1>Корзина</h1>
+    <div>
+      <h2>Корзина</h2>
+      <button onClick={() => navigate('/')}>Назад к товарам</button>
       {user.cart?.length === 0 ? (
-        <div className="alert alert-info mt-3">
-          Корзина пуста. <Link to="/">Вернуться к товарам</Link>
-        </div>
+        <div>Корзина пуста</div>
       ) : (
-        <div className="row mt-3">
-          {user.cart?.map(product => (
-            <div key={product.id} className="col-md-4 mb-4">
-              <div className="card h-100">
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">{product.title}</h5>
-                  <p className="card-text">Цена: {product.price} ₽</p>
-                  <button 
-                    onClick={() => handleRemove(product.id)}
-                    className="btn btn-danger mt-auto"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            </div>
+        <ul>
+          {user.cart.map(product => (
+            <li key={product.id}>
+              {product.title} — {product.price}₽
+              <button
+                disabled={isLoading}
+                onClick={() => removeFromCart(product.id)}
+              >
+                Удалить
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
