@@ -1,114 +1,128 @@
+// src/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from './api'; // Используем наш axios-экземпляр
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const login = async (username, password) => {
-  try {
-    const response = await axios.post('http://localhost:5000/api/login', 
-      { username, password }, 
-      { withCredentials: true }
-    );
-    await checkAuth(); // Важно дождаться обновления данных пользователя
-    return response.data;
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error; // Пробрасываем ошибку для обработки в компоненте
-  }
-};
+    try {
+      setIsLoading(true);
+      const response = await api.post('/api/login', { username, password });
+      await checkAuth();
+      return response.data;
+    } catch (error) {
+      console.error('Ошибка входа:', error.response?.data || error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const register = async (username, email, password) => {
-    const response = await axios.post('http://localhost:5000/api/register', 
-      { username, email, password },
-      { withCredentials: true }
-    );
-    await login(username, password); 
-    return response.data;
+    try {
+      setIsLoading(true);
+      const response = await api.post('/api/register', { username, email, password });
+      await login(username, password);
+      return response.data;
+    } catch (error) {
+      console.error('Ошибка регистрации:', error.response?.data || error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/logout', {}, { 
-        withCredentials: true 
-      });
-      setUser(null); // Обязательно сбрасываем пользователя
+      setIsLoading(true);
+      await api.post('/api/logout');
+      setUser(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Ошибка выхода:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const checkAuth = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/me', { 
-        withCredentials: true 
-      });
+      const { data } = await api.get('/api/me');
       setUser(data);
-    } catch {
+      return data;
+    } catch (error) {
       setUser(null);
+      throw error;
     }
-    
   };
-  
-  // Удаление/добавление в корзину
-const addToCart = async (productId) => {
-  try {
-    console.log('Добавляем товар в корзину:', productId); // [!code ++]
-    await axios.post('http://localhost:5000/api/cart', 
-      { productId },
-      { withCredentials: true }
-    );
-    const { data } = await axios.get('http://localhost:5000/api/me', { // [!code ++]
-      withCredentials: true
-    });
-    setUser(data); // Обновляем данные пользователя
-  } catch (error) {
-    console.error('Ошибка добавления в корзину:', error);
-  }
-};
 
-const removeFromCart = async (productId) => {
-  try {
-    console.log('Удаляем товар из корзины:', productId); // [!code ++]
-    await axios.delete(`http://localhost:5000/api/cart/${productId}`, {
-      withCredentials: true
-    });
-    const { data } = await axios.get('http://localhost:5000/api/me', { // [!code ++]
-      withCredentials: true
-    });
-    setUser(data); // Обновляем данные пользователя
-  } catch (error) {
-    console.error('Ошибка удаления из корзины:', error);
-  }
-};
+  const addToCart = async (productId) => {
+    try {
+      setIsLoading(true);
+      await api.post('/api/cart', { productId });
+      return await checkAuth();
+    } catch (error) {
+      console.error('Ошибка добавления в корзину:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  useEffect(() => { 
-    checkAuth(); 
+  const removeFromCart = async (productId) => {
+    try {
+      setIsLoading(true);
+      await api.delete(`/api/cart/${productId}`);
+      return await checkAuth();
+    } catch (error) {
+      console.error('Ошибка удаления из корзины:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Первоначальная проверка авторизации
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await checkAuth();
+      } catch (error) {
+        console.log('Пользователь не авторизован -', error);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+    initAuth();
   }, []);
 
-  // Добавьте этот хук прямо в AuthContext.jsx перед return провайдера
-useEffect(() => {
-  console.log('Текущий пользователь (в контексте):', user); // [!code ++]
-}, [user]);
-
   return (
-  <AuthContext.Provider value={{ 
-    user, 
-    login, 
-    register, 
-    logout,
-    addToCart,
-    removeFromCart
-  }}>
-    {children}
-  </AuthContext.Provider>
-);
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        authChecked,
+        login,
+        register,
+        logout,
+        addToCart,
+        removeFromCart
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+  if (!context) {
+    throw new Error('useAuth должен использоваться внутри AuthProvider');
+  }
   return context;
 };
