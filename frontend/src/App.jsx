@@ -5,10 +5,12 @@ import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import ProductList from './ProductList';
 import CartPage from './CartPage';
+import UML from './uml';
+import Doc from './doc'
 
 const ProtectedRoute = ({ children }) => {
   const { user, authChecked } = useAuth();
-  if (!authChecked) return null; // Можно показывать лоадер
+  if (!authChecked) return null;
   return user ? children : <Navigate to="/login" replace />;
 };
 
@@ -29,6 +31,9 @@ export default function App() {
               <CartPage />
             </ProtectedRoute>
           } />
+          {/* Вот эти строчки нужно добавить: */}
+          <Route path="/uml" element={<UML />} />
+          <Route path="/doc" element={<Doc />} />
         </Routes>
       </AuthProvider>
     </Router>
